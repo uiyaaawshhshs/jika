@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIGHTMARE HOUSE</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        user-select: none;
+    }
+
+    html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: Arial, Helvetica, sans-serif;
+        color: white;
+    }
+
+    #game {
+        position: fixed;
+        inset: 0;
+    }
+
+    canvas {
+        display: block;
+    }
+
+    /* =========================
+       HUD
+    ========================== */
+
+    #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    #topLeft {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        padding: 14px 18px;
+        background: rgba(0, 0, 0, .45);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 10px;
+        backdrop-filter: blur(8px);
+    }
+
+    #title {
+        font-size: 13px;
+        letter-spacing: 4px;
+        color: #aaa;
+        margin-bottom: 8px;
+    }
+
+    #keys {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    #keys span {
+        color: #d7d7d7;
+    }
+
+    #keys .found {
+        color: #f4c542;
+    }
+
+    #staminaBox {
+        position: absolute;
+        left: 24px;
+        bottom: 24px;
+        width: 220px;
+    }
+
+    #staminaLabel {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: #aaa;
+        margin-bottom: 6px;
+    }
+
+    #staminaOuter {
+        height: 8px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.15);
+        overflow: hidden;
+    }
+
+    #stamina {
+        width: 100%;
+        height: 100%;
+        background: #ddd;
+        transition: width .08s linear;
+    }
+
+    #crosshair {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255,255,255,.85);
+        border-radius: 50%;
+        box-shadow: 0 0 5px #000;
+    }
+
+    #interaction {
+        position: absolute;
+        left: 50%;
+        bottom: 19%;
+        transform: translateX(-50%);
+        padding: 10px 16px;
+        border-radius: 8px;
+        background: rgba(0,0,0,.65);
+        border: 1px solid rgba(255,255,255,.2);
+        font-size: 13px;
+        letter-spacing: 1px;
+        opacity: 0;
+        transition: opacity .15s;
+    }
+
+    #interaction.visible {
+        opacity: 1;
+    }
+
+    #message {
+        position: absolute;
+        left: 50%;
+        top: 13%;
+        transform: translateX(-50%);
+        color: #fff;
+        font-size: 16px;
+        letter-spacing: 2px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity .3s;
+        text-shadow: 0 2px 12px #000;
+    }
+
+    #message.visible {
+        opacity: 1;
+    }
+
+    #vignette {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 11;
+        background:
+            radial-gradient(
+                ellipse at center,
+                transparent 25%,
+                rgba(0,0,0,.15) 55%,
+                rgba(0,0,0,.78) 100%
+            );
+    }
+
+    #damage {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 12;
+        background: rgba(150,0,0,.5);
+        opacity: 0;
+    }
+
+    /* =========================
+       START / PAUSE / END
+    ========================== */
+
+    .screen {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            radial-gradient(circle at center, rgba(45,45,45,.12), rgba(0,0,0,.95));
+        text-align: center;
+    }
+
+    .panel {
+        width: min(560px, 90vw);
+        padding: 45px;
+        background: rgba(5,5,5,.82);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 18px;
+        box-shadow: 0 25px 80px rgba(0,0,0,.7);
+        backdrop-filter: blur(12px);
+    }
+
+    .logo {
+        font-size: clamp(38px, 7vw, 74px);
+        font-weight: 900;
+        letter-spacing: 9px;
+        margin-bottom: 8px;
+        color: #eee;
+    }
+
+    .subtitle {
+        color: #777;
+        letter-spacing: 5px;
+        font-size: 11px;
+        margin-bottom: 38px;
+    }
+
+    .description {
+        color: #aaa;
+        line-height: 1.7;
+        font-size: 14px;
+        margin-bottom: 28px;
+    }
+
+    button {
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,.2);
+        color: white;
+        background: #161616;
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        transition: .2s;
+    }
+
+    button:hover {
+        background: #282828;
+        border-color: rgba(255,255,255,.45);
+        transform: translateY(-1px);
+    }
+
+    .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 25px 0;
+        color: #888;
+        font-size: 12px;
+    }
+
+    .controls div {
+        padding: 9px;
+        background: rgba(255,255,255,.035);
+        border-radius: 6px;
+    }
+
+    #pauseScreen,
+    #endScreen {
+        display: none;
+    }
+
+    #endTitle {
+        font-size: clamp(48px, 9vw, 92px);
+        font-weight: 900;
+        letter-spacing: 12px;
+    }
+
+    #endTitle.escape {
+        color: #ddd;
+    }
+
+    #endTitle.dead {
+        color: #a22;
+    }
+
+    #hint {
+        color: #666;
+        margin: 18px 0 28px;
+        font-size: 13px;
+    }
+
+    @media (max-width: 700px) {
+        .panel {
+            padding: 28px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="game"></div>
+
+<div id="hud">
+    <div id="topLeft">
+        <div id="title">NIGHTMARE HOUSE</div>
+        <div id="keys">
+            KEYS:
+            <span id="key0">□</span>
+            <span id="key1">□</span>
+            <span id="key2">□</span>
+        </div>
+    </div>
+
+    <div id="staminaBox">
+        <div id="staminaLabel">STAMINA</div>
+        <div id="staminaOuter">
+            <div id="stamina"></div>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+    <div id="interaction"></div>
+    <div id="message"></div>
+</div>
+
+<div id="vignette"></div>
+<div id="damage"></div>
+
+<!-- START -->
+<div id="startScreen" class="screen">
+    <div class="panel">
+        <div class="logo">NIGHTMARE</div>
+        <div class="subtitle">HOUSE</div>
+
+        <div class="description">
+            Kamu terjebak di sebuah rumah tua.<br>
+            Temukan tiga kunci dan temukan jalan keluar.
+        </div>
+
+        <div class="controls">
+            <div><b>W A S D</b><br>Bergerak</div>
+            <div><b>MOUSE</b><br>Melihat</div>
+            <div><b>SHIFT</b><br>Lari</div>
+            <div><b>F</b><br>Senter</div>
+            <div><b>E</b><br>Interaksi</div>
+            <div><b>ESC</b><br>Pause</div>
+        </div>
+
+        <button id="startButton">ENTER THE HOUSE</button>
+    </div>
+</div>
+
+<!-- PAUSE -->
+<div id="pauseScreen" class="screen">
+    <div class="panel">
+        <div class="logo" style="font-size:48px;">PAUSED</div>
+        <div class="description">
+            Tekan ESC untuk kembali ke permainan.
+        </div>
+        <button id="resumeButton">RESUME</button>
+    </div>
+</div>
+
+<!-- END -->
+<div id="endScreen" class="screen">
+    <div class="panel">
+        <div id="endTitle">ESCAPED</div>
+        <div id="hint"></div>
+        <button id="restartButton">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script type="module">
+
+/* =========================================================
+   IMPORT THREE.JS
+========================================================= */
+
+import * as THREE from
+    "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js";
+
+import { PointerLockControls } from
+    "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/PointerLockControls.js";
+
+
+/* =========================================================
+   CORE
+========================================================= */
+
+const game = document.getElementById("game");
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x020304);
+
+scene.fog = new THREE.FogExp2(
+    0x020304,
+    0.045
+);
+
+
+const camera = new THREE.PerspectiveCamera(
+    72,
+    window.innerWidth / window.innerHeight,
+    0.05,
+    100
+);
+
+camera.position.set(0, 1.7, 10);
+
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: "high-performance"
+});
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, 2)
+);
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+game.appendChild(renderer.domElement);
+
+
+/* =========================================================
+   CONTROLS
+========================================================= */
+
+const controls = new PointerLockControls(
+    camera,
+    document.body
+);
+
+scene.add(camera);
+
+
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+const state = {
+    started: false,
+    paused: false,
+    ended: false,
+
+    keys: 0,
+
+    stamina: 100,
+
+    flashlight: true,
+
+    health: 100,
+
+    time: 0
+};
+
+
+const input = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    sprint: false
+};
+
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+const ambient = new THREE.HemisphereLight(
+    0x667080,
+    0x050505,
+    0.18
+);
+
+scene.add(ambient);
+
+
+const moon = new THREE.DirectionalLight(
+    0x8293b5,
+    0.35
+);
+
+moon.position.set(
+    -10,
+    15,
+    5
+);
+
+moon.castShadow = true;
+
+scene.add(moon);
+
+
+/* =========================================================
+   FLASHLIGHT
+========================================================= */
+
+const flashlight = new THREE.SpotLight(
+    0xffffff,
+    5,
+    28,
+    Math.PI / 7,
+    0.45,
+    1.5
+);
+
+flashlight.position.set(0, 0, 0);
+
+flashlight.castShadow = true;
+
+flashlight.shadow.mapSize.width = 1024;
+flashlight.shadow.mapSize.height = 1024;
+
+camera.add(flashlight);
+
+const flashlightTarget = new THREE.Object3D();
+
+flashlightTarget.position.set(
+    0,
+    -0.1,
+    -10
+);
+
+camera.add(flashlightTarget);
+
+flashlight.target = flashlightTarget;
+
+
+/* =========================================================
+   MATERIALS
+========================================================= */
+
+const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x202020,
+    roughness: .92
+});
+
+const wallMat = new THREE.MeshStandardMaterial({
+    color: 0x343434,
+    roughness: .96
+});
+
+const ceilingMat = new THREE.MeshStandardMaterial({
+    color: 0x171717,
+    roughness: 1
+});
+
+const woodMat = new THREE.MeshStandardMaterial({
+    color: 0x241a14,
+    roughness: .85
+});
+
+const doorMat = new THREE.MeshStandardMaterial({
+    color: 0x151515,
+    roughness: .8
+});
+
+const keyMat = new THREE.MeshStandardMaterial({
+    color: 0xffbf24,
+    emissive: 0x6d3d00,
+    emissiveIntensity: 1.5,
+    metalness: .8,
+    roughness: .25
+});
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const colliders = [];
+
+function box(
+    x,
+    y,
+    z,
+    sx,
+    sy,
+    sz,
+    material,
+    collision = true
+) {
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(sx, sy, sz),
+        material
+    );
+
+    mesh.position.set(x, y, z);
+
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    scene.add(mesh);
+
+    if (collision) {
+        colliders.push(mesh);
+    }
+
+    return mesh;
+}
+
+
+function cylinder(
+    x,
+    y,
+    z,
+    radius,
+    height,
+    material
+) {
+    const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+            radius,
+            radius,
+            height,
+            16
+        ),
+        material
+    );
+
+    mesh.position.set(x, y, z);
+
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    scene.add(mesh);
+
+    return mesh;
+}
+
+
+/* =========================================================
+   HOUSE
+========================================================= */
+
+const houseWidth = 30;
+const houseDepth = 24;
+const wallHeight = 4;
+
+box(
+    0,
+    -0.25,
+    0,
+    houseWidth,
+    .5,
+    houseDepth,
+    floorMat,
+    true
+);
+
+
+// Ceiling
+box(
+    0,
+    wallHeight + .25,
+    0,
+    houseWidth,
+    .5,
+    houseDepth,
+    ceilingMat,
+    false
+);
+
+
+// Outer walls
+
+box(
+    0,
+    wallHeight / 2,
+    -houseDepth / 2,
+    houseWidth,
+    wallHeight,
+    .5,
+    wallMat
+);
+
+box(
+    -houseWidth / 2,
+    wallHeight / 2,
+    0,
+    .5,
+    wallHeight,
+    houseDepth,
+    wallMat
+);
+
+box(
+    houseWidth / 2,
+    wallHeight / 2,
+    0,
+    .5,
+    wallHeight,
+    houseDepth,
+    wallMat
+);
+
+
+/*
+   Back wall has a doorway opening.
+*/
+
+box(
+    -9,
+    wallHeight / 2,
+    houseDepth / 2,
+    12,
+    wallHeight,
+    .5,
+    wallMat
+);
+
+box(
+    9,
+    wallHeight / 2,
+    houseDepth / 2,
+    12,
+    wallHeight,
+    .5,
+    wallMat
+);
+
+box(
+    0,
+    3.25,
+    houseDepth / 2,
+    6,
+    1.5,
+    .5,
+    wallMat
+);
+
+
+/* =========================================================
+   INTERIOR WALLS
+========================================================= */
+
+// Left corridor
+box(
+    -5,
+    2,
+    -2,
+    .4,
+    4,
+    10,
+    wallMat
+);
+
+
+// Bedroom divider
+box(
+    5,
+    2,
+    3,
+    10,
+    4,
+    .4,
+    wallMat
+);
+
+
+// Small center divider
+box(
+    0,
+    2,
+    -7,
+    12,
+    4,
+    .4,
+    wallMat
+);
+
+
+/* =========================================================
+   EXIT DOOR
+========================================================= */
+
+const exitDoor = box(
+    0,
+    2,
+    11.75,
+    5.5,
+    4,
+    .35,
+    doorMat,
+    true
+);
+
+exitDoor.userData.type = "exit";
+
+
+/* =========================================================
+   FURNITURE
+========================================================= */
+
+// Bed
+box(
+    -10,
+    .55,
+    5,
+    4,
+    1,
+    6,
+    woodMat
+);
+
+box(
+    -10,
+    1.25,
+    7.4,
+    4,
+    1.8,
+    .4,
+    woodMat
+);
+
+
+// Table
+box(
+    8,
+    1.15,
+    -5,
+    4,
+    .25,
+    2.5,
+    woodMat
+);
+
+for (const x of [-1.6, 1.6]) {
+    for (const z of [-.9, .9]) {
+        cylinder(
+            8 + x,
+            .55,
+            -5 + z,
+            .12,
+            1.1,
+            woodMat
+        );
+    }
+}
+
+
+// Cabinet
+box(
+    -10,
+    1.8,
+    -7,
+    3,
+    3.6,
+    1.2,
+    woodMat
+);
+
+
+/* =========================================================
+   WALL DECORATION
+========================================================= */
+
+for (let i = 0; i < 14; i++) {
+
+    const x = THREE.MathUtils.randFloat(
+        -13,
+        13
+    );
+
+    const z = THREE.MathUtils.randFloat(
+        -9,
+        9
+    );
+
+    const frame = box(
+        x,
+        THREE.MathUtils.randFloat(1.3, 2.7),
+        z,
+        .08,
+        .8,
+        .8,
+        woodMat,
+        false
+    );
+
+    frame.rotation.y =
+        Math.random() > .5
+            ? 0
+            : Math.PI / 2;
+}
+
+
+/* =========================================================
+   KEYS
+========================================================= */
+
+const keyObjects = [];
+
+const keyPositions = [
+    new THREE.Vector3(-11, 1.3, -7),
+    new THREE.Vector3(9, 1.5, -5),
+    new THREE.Vector3(9, 1.3, 8)
+];
+
+
+function createKey(position, index) {
+
+    const group = new THREE.Group();
+
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(
+            .24,
+            .07,
+            10,
+            24
+        ),
+        keyMat
+    );
+
+    ring.rotation.x = Math.PI / 2;
+
+    group.add(ring);
+
+    const shaft = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            .08,
+            .45,
+            .08
+        ),
+        keyMat
+    );
+
+    shaft.position.y = -.25;
+
+    group.add(shaft);
+
+    group.position.copy(position);
+
+    group.userData.type = "key";
+    group.userData.index = index;
+
+    scene.add(group);
+
+    keyObjects.push(group);
+
+    // Small glow
+    const light = new THREE.PointLight(
+        0xffb51b,
+        1.2,
+        3
+    );
+
+    light.position.copy(position);
+
+    scene.add(light);
+}
+
+
+keyPositions.forEach(createKey);
+
+
+/* =========================================================
+   MONSTER
+========================================================= */
+
+const monster = new THREE.Group();
+
+const monsterBody = new THREE.Mesh(
+    new THREE.CapsuleGeometry(
+        .55,
+        1.4,
+        6,
+        12
+    ),
+    new THREE.MeshStandardMaterial({
+        color: 0x090909,
+        roughness: 1
+    })
+);
+
+monsterBody.castShadow = true;
+
+monster.add(monsterBody);
+
+
+const eyeMat = new THREE.MeshBasicMaterial({
+    color: 0xff1111
+});
+
+const eye1 = new THREE.Mesh(
+    new THREE.SphereGeometry(.08, 8, 8),
+    eyeMat
+);
+
+const eye2 = eye1.clone();
+
+eye1.position.set(-.18, .35, -.47);
+eye2.position.set(.18, .35, -.47);
+
+monster.add(eye1);
+monster.add(eye2);
+
+monster.position.set(
+    11,
+    1.3,
+    8
+);
+
+scene.add(monster);
+
+
+/* =========================================================
+   COLLISION
+========================================================= */
+
+const playerRadius = .38;
+
+function canMoveTo(position) {
+
+    const playerBox = new THREE.Box3().setFromCenterAndSize(
+        position,
+        new THREE.Vector3(
+            playerRadius * 2,
+            1.7,
+            playerRadius * 2
+        )
+    );
+
+    for (const object of colliders) {
+
+        if (object === exitDoor && state.keys >= 3) {
+            continue;
+        }
+
+        const box3 = new THREE.Box3()
+            .setFromObject(object);
+
+        if (playerBox.intersectsBox(box3)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   INTERACTION
+========================================================= */
+
+const interaction = document.getElementById(
+    "interaction"
+);
+
+const raycaster = new THREE.Raycaster();
+
+function getInteractionObject() {
+
+    raycaster.setFromCamera(
+        new THREE.Vector2(0, 0),
+        camera
+    );
+
+    const objects = [
+        ...keyObjects,
+        exitDoor
+    ];
+
+    const hits = raycaster.intersectObjects(
+        objects,
+        true
+    );
+
+    if (
+        hits.length &&
+        hits[0].distance < 3
+    ) {
+        return hits[0].object;
+    }
+
+    return null;
+}
+
+
+function findParentObject(object) {
+
+    let current = object;
+
+    while (
+        current &&
+        !current.userData.type
+    ) {
+        current = current.parent;
+    }
+
+    return current;
+}
+
+
+function updateInteraction() {
+
+    const hit = getInteractionObject();
+
+    if (!hit) {
+        interaction.classList.remove("visible");
+        return;
+    }
+
+    const object = findParentObject(hit);
+
+    if (!object) return;
+
+    if (object.userData.type === "key") {
+
+        interaction.textContent =
+            "E  —  AMBIL KUNCI";
+
+        interaction.classList.add("visible");
+
+    } else if (
+        object.userData.type === "exit"
+    ) {
+
+        if (state.keys >= 3) {
+
+            interaction.textContent =
+                "E  —  BUKA PINTU";
+
+        } else {
+
+            interaction.textContent =
+                `PINTU TERKUNCI  —  ${state.keys}/3 KUNCI`;
+
+        }
+
+        interaction.classList.add("visible");
+    }
+}
+
+
+/* =========================================================
+   KEY COLLECTION
+========================================================= */
+
+function collectKey(key) {
+
+    const index = key.userData.index;
+
+    if (key.userData.collected) return;
+
+    key.userData.collected = true;
+
+    scene.remove(key);
+
+    state.keys++;
+
+    updateKeyUI();
+
+    showMessage(
+        state.keys === 3
+            ? "SEMUA KUNCI TERKUMPUL. CARI PINTU KELUAR."
+            : `KUNCI DITEMUKAN — ${state.keys}/3`
+    );
+}
+
+
+function updateKeyUI() {
+
+    for (let i = 0; i < 3; i++) {
+
+        const element =
+            document.getElementById(`key${i}`);
+
+        if (i < state.keys) {
+            element.textContent = "◆";
+            element.classList.add("found");
+        } else {
+            element.textContent = "□";
+            element.classList.remove("found");
+        }
+    }
+}
+
+
+/* =========================================================
+   EXIT
+========================================================= */
+
+function tryExit() {
+
+    if (state.keys < 3) {
+
+        showMessage(
+            `PINTU TERKUNCI — BUTUH ${3 - state.keys} KUNCI LAGI`
+        );
+
+        return;
+    }
+
+    const distance =
+        camera.position.distanceTo(
+            exitDoor.position
+        );
+
+    if (distance > 4) {
+        showMessage(
+            "TERLALU JAUH DARI PINTU"
+        );
+        return;
+    }
+
+    escapeGame();
+}
+
+
+function escapeGame() {
+
+    state.ended = true;
+
+    controls.unlock();
+
+    document.getElementById(
+        "endTitle"
+    ).textContent = "ESCAPED";
+
+    document.getElementById(
+        "endTitle"
+    ).className = "escape";
+
+    document.getElementById(
+        "hint"
+    ).textContent =
+        "Kamu berhasil keluar dari Nightmare House.";
+
+    document.getElementById(
+        "endScreen"
+    ).style.display = "flex";
+}
+
+
+/* =========================================================
+   GAME OVER
+========================================================= */
+
+function gameOver() {
+
+    if (state.ended) return;
+
+    state.ended = true;
+
+    controls.unlock();
+
+    document.getElementById(
+        "endTitle"
+    ).textContent = "CAUGHT";
+
+    document.getElementById(
+        "endTitle"
+    ).className = "dead";
+
+    document.getElementById(
+        "hint"
+    ).textContent =
+        "Sesuatu di dalam rumah berhasil menemukanmu.";
+
+    document.getElementById(
+        "endScreen"
+    ).style.display = "flex";
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+let messageTimer = null;
+
+function showMessage(text) {
+
+    const element =
+        document.getElementById("message");
+
+    element.textContent = text;
+
+    element.classList.add("visible");
+
+    clearTimeout(messageTimer);
+
+    messageTimer = setTimeout(() => {
+        element.classList.remove("visible");
+    }, 3000);
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.code === "KeyW")
+            input.forward = true;
+
+        if (event.code === "KeyS")
+            input.backward = true;
+
+        if (event.code === "KeyA")
+            input.left = true;
+
+        if (event.code === "KeyD")
+            input.right = true;
+
+        if (event.code === "ShiftLeft" ||
+            event.code === "ShiftRight") {
+            input.sprint = true;
+        }
+
+        if (
+            event.code === "KeyF" &&
+            state.started &&
+            !state.ended
+        ) {
+
+            state.flashlight =
+                !state.flashlight;
+
+            flashlight.visible =
+                state.flashlight;
+
+            showMessage(
+                state.flashlight
+                    ? "SENTER ON"
+                    : "SENTER OFF"
+            );
+        }
+
+        if (
+            event.code === "KeyE" &&
+            state.started &&
+            !state.ended
+        ) {
+
+            const object =
+                getInteractionObject();
+
+            if (object) {
+
+                const parent =
+                    findParentObject(object);
+
+                if (
+                    parent?.userData.type ===
+                    "key"
+                ) {
+                    collectKey(parent);
+                }
+
+                if (
+                    parent?.userData.type ===
+                    "exit"
+                ) {
+                    tryExit();
+                }
+            }
+        }
+
+        if (
+            event.code === "Escape" &&
+            state.started &&
+            !state.ended
+        ) {
+
+            if (controls.isLocked) {
+                controls.unlock();
+            } else {
+                controls.lock();
+            }
+        }
+    }
+);
+
+
+document.addEventListener(
+    "keyup",
+    event => {
+
+        if (event.code === "KeyW")
+            input.forward = false;
+
+        if (event.code === "KeyS")
+            input.backward = false;
+
+        if (event.code === "KeyA")
+            input.left = false;
+
+        if (event.code === "KeyD")
+            input.right = false;
+
+        if (
+            event.code === "ShiftLeft" ||
+            event.code === "ShiftRight"
+        ) {
+            input.sprint = false;
+        }
+    }
+);
+
+
+/* =========================================================
+   POINTER LOCK
+========================================================= */
+
+controls.addEventListener(
+    "lock",
+    () => {
+
+        if (!state.ended) {
+
+            state.paused = false;
+
+            document.getElementById(
+                "pauseScreen"
+            ).style.display = "none";
+        }
+    }
+);
+
+
+controls.addEventListener(
+    "unlock",
+    () => {
+
+        if (
+            state.started &&
+            !state.ended
+        ) {
+
+            state.paused = true;
+
+            document.getElementById(
+                "pauseScreen"
+            ).style.display = "flex";
+        }
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+document.getElementById(
+    "startButton"
+).addEventListener(
+    "click",
+    () => {
+
+        state.started = true;
+
+        document.getElementById(
+            "startScreen"
+        ).style.display = "none";
+
+        controls.lock();
+    }
+);
+
+
+document.getElementById(
+    "resumeButton"
+).addEventListener(
+    "click",
+    () => {
+        controls.lock();
+    }
+);
+
+
+/* =========================================================
+   RESTART
+========================================================= */
+
+document.getElementById(
+    "restartButton"
+).addEventListener(
+    "click",
+    () => {
+        location.reload();
+    }
+);
+
+
+/* =========================================================
+   PLAYER MOVEMENT
+========================================================= */
+
+const clock = new THREE.Clock();
+
+function updatePlayer(delta) {
+
+    if (
+        !state.started ||
+        state.paused ||
+        state.ended ||
+        !controls.isLocked
+    ) {
+        return;
+    }
+
+    const direction =
+        new THREE.Vector3();
+
+    if (input.forward)
+        direction.z -= 1;
+
+    if (input.backward)
+        direction.z += 1;
+
+    if (input.left)
+        direction.x -= 1;
+
+    if (input.right)
+        direction.x += 1;
+
+    if (direction.lengthSq() === 0) {
+
+        state.stamina = Math.min(
+            100,
+            state.stamina + delta * 20
+        );
+
+        updateStamina();
+
+        return;
+    }
+
+    direction.normalize();
+
+    const running =
+        input.sprint &&
+        state.stamina > 1;
+
+    const speed =
+        running ? 6.2 : 3.2;
+
+    if (running) {
+        state.stamina = Math.max(
+            0,
+            state.stamina - delta * 28
+        );
+    } else {
+        state.stamina = Math.min(
+            100,
+            state.stamina + delta * 13
+        );
+    }
+
+    updateStamina();
+
+    const moveX =
+        direction.x * speed * delta;
+
+    const moveZ =
+        direction.z * speed * delta;
+
+
+    // Test X movement
+    const nextX =
+        camera.position.clone();
+
+    nextX.x += moveX;
+
+    if (canMoveTo(nextX)) {
+        camera.position.x = nextX.x;
+    }
+
+
+    // Test Z movement
+    const nextZ =
+        camera.position.clone();
+
+    nextZ.z += moveZ;
+
+    if (canMoveTo(nextZ)) {
+        camera.position.z = nextZ.z;
+    }
+
+    camera.position.y = 1.7;
+}
+
+
+function updateStamina() {
+
+    document.getElementById(
+        "stamina"
+    ).style.width =
+        `${state.stamina}%`;
+}
+
+
+/* =========================================================
+   MONSTER AI
+========================================================= */
+
+function updateMonster(delta) {
+
+    if (
+        !state.started ||
+        state.paused ||
+        state.ended
+    ) {
+        return;
+    }
+
+    const distance =
+        monster.position.distanceTo(
+            camera.position
+        );
+
+    // Monster becomes aggressive
+    if (distance < 15) {
+
+        const direction =
+            new THREE.Vector3()
+                .subVectors(
+                    camera.position,
+                    monster.position
+                );
+
+        direction.y = 0;
+
+        if (direction.lengthSq() > 0) {
+
+            direction.normalize();
+
+            const speed =
+                distance < 6
+                    ? 1.65
+                    : .75;
+
+            monster.position.addScaledVector(
+                direction,
+                speed * delta
+            );
+
+            monster.lookAt(
+                camera.position.x,
+                monster.position.y,
+                camera.position.z
+            );
+        }
+    }
+
+    if (distance < 1.15) {
+
+        state.health -=
+            delta * 55;
+
+        const damage =
+            document.getElementById(
+                "damage"
+            );
+
+        damage.style.opacity =
+            Math.min(
+                .65,
+                (1.15 - distance) * .9
+            );
+
+        if (state.health <= 0) {
+            gameOver();
+        }
+
+    } else {
+
+        document.getElementById(
+            "damage"
+        ).style.opacity = 0;
+    }
+}
+
+
+/* =========================================================
+   KEY ANIMATION
+========================================================= */
+
+function animateKeys(time) {
+
+    for (const key of keyObjects) {
+
+        if (key.userData.collected)
+            continue;
+
+        key.rotation.y =
+            time * .002;
+
+        key.position.y =
+            key.userData.baseY +
+            Math.sin(time * .003) * .12;
+    }
+}
+
+
+/* =========================================================
+   INITIALIZE KEY HEIGHT
+========================================================= */
+
+for (const key of keyObjects) {
+    key.userData.baseY =
+        key.position.y;
+}
+
+
+/* =========================================================
+   WINDOW
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+    }
+);
+
+
+/* =========================================================
+   MAIN LOOP
+========================================================= */
+
+function animate(time) {
+
+    requestAnimationFrame(animate);
+
+    const delta =
+        Math.min(
+            clock.getDelta(),
+            .05
+        );
+
+    state.time += delta;
+
+    updatePlayer(delta);
+    updateMonster(delta);
+    updateInteraction();
+    animateKeys(time);
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+animate(0);
+
+</script>
+</body>
+</html>
