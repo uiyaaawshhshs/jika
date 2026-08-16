@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Nightmare House 3D</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+  font-family:Arial,sans-serif;
+  touch-action:none;
+}
+
+#game{
+  position:fixed;
+  inset:0;
+}
+
+canvas{
+  display:block;
+}
+
+/* ================= HUD ================= */
+
+#hud{
+  position:fixed;
+  top:15px;
+  left:15px;
+  z-index:20;
+  color:white;
+  text-shadow:0 2px 5px black;
+  pointer-events:none;
+}
+
+.title{
+  color:#d00000;
+  font-weight:bold;
+  font-size:20px;
+  margin-bottom:8px;
+}
+
+.bar{
+  width:180px;
+  height:8px;
+  background:#222;
+  border:1px solid #555;
+  margin:4px 0 7px;
+}
+
+.fill{
+  height:100%;
+  transition:.15s;
+}
+
+#hp{
+  background:#c00000;
+  width:100%;
+}
+
+#stamina{
+  background:#d5bd00;
+  width:100%;
+}
+
+#battery{
+  background:#ddd;
+  width:100%;
+}
+
+#objective{
+  margin-top:10px;
+  font-size:14px;
+}
+
+/* ================= CROSSHAIR ================= */
+
+#crosshair{
+  position:fixed;
+  left:50%;
+  top:50%;
+  width:7px;
+  height:7px;
+  margin:-3px;
+  border:1px solid white;
+  border-radius:50%;
+  z-index:25;
+  pointer-events:none;
+}
+
+/* ================= START ================= */
+
+#startScreen,
+#gameOver,
+#winScreen{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+
+  background:
+    radial-gradient(
+      circle,
+      #181818 0%,
+      #050505 50%,
+      #000 100%
+    );
+}
+
+.panel{
+  width:min(90%,600px);
+  padding:30px;
+  color:#ddd;
+}
+
+.panel h1{
+  margin:0;
+  color:#b00000;
+  font-size:clamp(45px,10vw,75px);
+  text-shadow:
+    0 0 15px #700,
+    0 0 35px #300;
+}
+
+.panel p{
+  line-height:1.7;
+}
+
+button{
+  border:1px solid #b00;
+  background:#700000;
+  color:#fff;
+  padding:14px 30px;
+  font-size:17px;
+  border-radius:4px;
+}
+
+button:active{
+  background:#c00000;
+}
+
+/* ================= MESSAGE ================= */
+
+#message{
+  position:fixed;
+  bottom:20%;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  color:white;
+  font-size:19px;
+  text-align:center;
+  text-shadow:0 2px 8px #000;
+  opacity:0;
+  transition:.25s;
+  pointer-events:none;
+}
+
+/* ================= EFFECTS ================= */
+
+#blood{
+  position:fixed;
+  inset:0;
+  z-index:12;
+  pointer-events:none;
+  opacity:0;
+
+  background:
+    radial-gradient(
+      circle,
+      transparent 35%,
+      rgba(160,0,0,.75)
+    );
+}
+
+#vignette{
+  position:fixed;
+  inset:0;
+  z-index:11;
+  pointer-events:none;
+
+  box-shadow:
+    inset 0 0 100px #000;
+}
+
+/* ================= MOBILE CONTROLS ================= */
+
+#mobileControls{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:50;
+  pointer-events:none;
+}
+
+#joystick{
+  position:absolute;
+  left:25px;
+  bottom:30px;
+
+  width:125px;
+  height:125px;
+
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.06);
+
+  pointer-events:auto;
+}
+
+#stick{
+  position:absolute;
+
+  width:55px;
+  height:55px;
+
+  left:35px;
+  top:35px;
+
+  border-radius:50%;
+  background:rgba(255,255,255,.25);
+  border:1px solid rgba(255,255,255,.4);
+}
+
+.action{
+  position:absolute;
+
+  width:65px;
+  height:65px;
+
+  border-radius:50%;
+
+  color:white;
+  background:rgba(70,0,0,.55);
+  border:1px solid rgba(255,0,0,.6);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:12px;
+
+  pointer-events:auto;
+}
+
+#runBtn{
+  right:25px;
+  bottom:30px;
+}
+
+#flashBtn{
+  right:105px;
+  bottom:105px;
+}
+
+#interactBtn{
+  right:25px;
+  bottom:115px;
+}
+
+#lookArea{
+  position:absolute;
+  right:0;
+  top:0;
+
+  width:55%;
+  height:100%;
+
+  pointer-events:auto;
+}
+
+/* tampilkan kontrol HP */
+
+@media (pointer:coarse){
+  #mobileControls{
+    display:block;
+  }
+
+  #crosshair{
+    display:none;
+  }
+}
+
+/* ================= JUMPSCARE ================= */
+
+#scare{
+  display:none;
+
+  position:fixed;
+  inset:0;
+  z-index:200;
+
+  background:#000;
+
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+.face{
+  font-size:180px;
+  color:#b00000;
+
+  text-shadow:
+    0 0 20px red,
+    0 0 70px #700;
+
+  animation:shake .04s infinite;
+}
+
+@keyframes shake{
+
+  0%{
+    transform:translate(5px,-3px) scale(1);
+  }
+
+  50%{
+    transform:translate(-6px,4px) scale(1.15);
+  }
+
+  100%{
+    transform:translate(4px,2px) scale(1.05);
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<div id="game"></div>
+
+<!-- HUD -->
+
+<div id="hud">
+
+  <div class="title">
+    NIGHTMARE HOUSE
+  </div>
+
+  HP
+
+  <div class="bar">
+    <div id="hp" class="fill"></div>
+  </div>
+
+  STAMINA
+
+  <div class="bar">
+    <div id="stamina" class="fill"></div>
+  </div>
+
+  BATTERY
+
+  <div class="bar">
+    <div id="battery" class="fill"></div>
+  </div>
+
+  <div id="objective">
+    Kunci: 0 / 3
+  </div>
+
+</div>
+
+<div id="crosshair"></div>
+<div id="vignette"></div>
+<div id="blood"></div>
+<div id="message"></div>
+
+
+<!-- START -->
+
+<div id="startScreen">
+
+  <div class="panel">
+
+    <h1>NIGHTMARE</h1>
+
+    <p>
+      HOUSE
+    </p>
+
+    <p>
+      Kamu terbangun sendirian<br>
+      di sebuah rumah tua.
+    </p>
+
+    <p>
+      Sesuatu sedang memburumu.
+    </p>
+
+    <p>
+      <b>PC</b><br>
+      WASD = bergerak<br>
+      Mouse = melihat<br>
+      Shift = lari<br>
+      F = senter<br>
+      E = interaksi
+    </p>
+
+    <p>
+      <b>HP</b><br>
+      Joystick = bergerak<br>
+      Geser layar kanan = melihat
+    </p>
+
+    <button id="startButton">
+      MULAI
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- MOBILE -->
+
+<div id="mobileControls">
+
+  <div id="lookArea"></div>
+
+  <div id="joystick">
+    <div id="stick"></div>
+  </div>
+
+  <div
+    id="runBtn"
+    class="action">
+    RUN
+  </div>
+
+  <div
+    id="flashBtn"
+    class="action">
+    FLASH
+  </div>
+
+  <div
+    id="interactBtn"
+    class="action">
+    E
+  </div>
+
+</div>
+
+
+<!-- JUMPSCARE -->
+
+<div id="scare">
+
+  <div class="face">
+    ☠
+  </div>
+
+  <h1>
+    YOU DIED
+  </h1>
+
+</div>
+
+
+<!-- GAME OVER -->
+
+<div id="gameOver">
+
+  <div class="panel">
+
+    <h1>
+      GAME OVER
+    </h1>
+
+    <button onclick="location.reload()">
+      MAIN LAGI
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- WIN -->
+
+<div id="winScreen">
+
+  <div class="panel">
+
+    <h1>
+      ESCAPED
+    </h1>
+
+    <p>
+      Kamu berhasil keluar.
+    </p>
+
+    <p>
+      Tapi sesuatu masih menatapmu
+      dari dalam rumah...
+    </p>
+
+    <button onclick="location.reload()">
+      MAIN LAGI
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- THREE.JS -->
+
+<script type="importmap">
+{
+  "imports":{
+    "three":
+    "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+
+<script type="module">
+
+import * as THREE
+from "three";
+
+
+/* =====================================================
+   ENGINE
+===================================================== */
+
+const scene =
+  new THREE.Scene();
+
+scene.background =
+  new THREE.Color(0x020204);
+
+scene.fog =
+  new THREE.FogExp2(
+    0x050507,
+    .025
+  );
+
+
+const camera =
+  new THREE.PerspectiveCamera(
+    75,
+    innerWidth / innerHeight,
+    .05,
+    100
+  );
+
+camera.position.set(
+  0,
+  1.7,
+  9
+);
+
+
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias:true
+  });
+
+renderer.setSize(
+  innerWidth,
+  innerHeight
+);
+
+renderer.setPixelRatio(
+  Math.min(devicePixelRatio,2)
+);
+
+renderer.shadowMap.enabled=true;
+
+renderer.outputColorSpace =
+  THREE.SRGBColorSpace;
+
+document
+  .getElementById("game")
+  .appendChild(renderer.domElement);
+
+
+/* =====================================================
+   LIGHTING
+===================================================== */
+
+scene.add(
+  new THREE.HemisphereLight(
+    0x3b4050,
+    0x020202,
+    .3
+  )
+);
+
+
+const moon =
+  new THREE.DirectionalLight(
+    0x7180aa,
+    .4
+  );
+
+moon.position.set(
+  -10,
+  15,
+  10
+);
+
+moon.castShadow=true;
+
+scene.add(moon);
+
+
+/* FLASHLIGHT */
+
+const flashlight =
+  new THREE.SpotLight(
+    0xffffff,
+    10,
+    28,
+    Math.PI/9,
+    .5,
+    1
+  );
+
+flashlight.castShadow=true;
+
+camera.add(
+  flashlight
+);
+
+camera.add(
+  flashlight.target
+);
+
+flashlight.target.position.set(
+  0,
+  0,
+  -1
+);
+
+scene.add(camera);
+
+
+/* =====================================================
+   MATERIALS
+===================================================== */
+
+const floorMat =
+  new THREE.MeshStandardMaterial({
+    color:0x171717,
+    roughness:1
+  });
+
+
+const wallMat =
+  new THREE.MeshStandardMaterial({
+    color:0x242326,
+    roughness:1
+  });
+
+
+const woodMat =
+  new THREE.MeshStandardMaterial({
+    color:0x28150f,
+    roughness:.9
+  });
+
+
+const blackMat =
+  new THREE.MeshStandardMaterial({
+    color:0x060606,
+    roughness:1
+  });
+
+
+const goldMat =
+  new THREE.MeshStandardMaterial({
+    color:0xffcc00,
+    emissive:0x553300
+  });
+
+
+/* =====================================================
+   CUBE
+===================================================== */
+
+function cube(
+  x,
+  y,
+  z,
+  w,
+  h,
+  d,
+  material
+){
+
+  const mesh =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        w,h,d
+      ),
+      material
+    );
+
+  mesh.position.set(
+    x,y,z
+  );
+
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+
+  scene.add(mesh);
+
+  return mesh;
+}
+
+
+/* =====================================================
+   HOUSE
+===================================================== */
+
+cube(
+  0,-.15,0,
+  40,.3,40,
+  floorMat
+);
+
+
+/* outside walls */
+
+cube(
+  0,3,-15,
+  30,6,.5,
+  wallMat
+);
+
+cube(
+  0,3,15,
+  30,6,.5,
+  wallMat
+);
+
+cube(
+  -15,3,0,
+  .5,6,30,
+  wallMat
+);
+
+cube(
+  15,3,0,
+  .5,6,30,
+  wallMat
+);
+
+
+/* interior */
+
+cube(
+  -7,3,-5,
+  .4,6,10,
+  wallMat
+);
+
+cube(
+  7,3,5,
+  .4,6,10,
+  wallMat
+);
+
+cube(
+  0,3,-10,
+  14,6,.4,
+  wallMat
+);
+
+cube(
+  0,3,10,
+  14,6,.4,
+  wallMat
+);
+
+
+/* furniture */
+
+cube(
+  -11,1,-8,
+  3,2,1.5,
+  woodMat
+);
+
+cube(
+  10,1,7,
+  2,2,2,
+  woodMat
+);
+
+cube(
+  -10,1,7,
+  2,2,2,
+  woodMat
+);
+
+cube(
+  11,1,-7,
+  2,2,2,
+  woodMat
+);
+
+
+/* =====================================================
+   LIGHTS
+===================================================== */
+
+function lamp(x,z){
+
+  const light =
+    new THREE.PointLight(
+      0xffaa66,
+      1.5,
+      7
+    );
+
+  light.position.set(
+    x,
+    4.5,
+    z
+  );
+
+  scene.add(light);
+
+}
+
+
+lamp(-10,-8);
+lamp(10,8);
+lamp(-10,8);
+lamp(10,-8);
+
+
+/* =====================================================
+   EXIT
+===================================================== */
+
+const exit =
+  cube(
+    0,2,-14.7,
+    3,4,.3,
+    woodMat
+  );
+
+
+const exitLight =
+  new THREE.PointLight(
+    0xff0000,
+    2,
+    8
+  );
+
+exitLight.position.set(
+  0,
+  4.5,
+  -14
+);
+
+scene.add(exitLight);
+
+
+/* =====================================================
+   TREES
+===================================================== */
+
+const trunkMat =
+  new THREE.MeshStandardMaterial({
+    color:0x160e0b
+  });
+
+const leafMat =
+  new THREE.MeshStandardMaterial({
+    color:0x061006
+  });
+
+
+function tree(
+  x,
+  z,
+  scale
+){
+
+  const trunk =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        .2*scale,
+        .3*scale,
+        3*scale,
+        8
+      ),
+      trunkMat
+    );
+
+  trunk.position.set(
+    x,
+    1.5*scale,
+    z
+  );
+
+  scene.add(trunk);
+
+
+  for(let i=0;i<3;i++){
+
+    const leaves =
+      new THREE.Mesh(
+        new THREE.ConeGeometry(
+          1.4*scale,
+          2*scale,
+          8
+        ),
+        leafMat
+      );
+
+    leaves.position.set(
+      x,
+      2.5*scale+i*.7*scale,
+      z
+    );
+
+    scene.add(leaves);
+  }
+
+}
+
+
+for(let i=0;i<45;i++){
+
+  const a =
+    Math.random()*Math.PI*2;
+
+  const r =
+    17+Math.random()*10;
+
+  tree(
+    Math.cos(a)*r,
+    Math.sin(a)*r,
+    .7+Math.random()*.6
+  );
+
+}
+
+
+/* =====================================================
+   KEYS
+===================================================== */
+
+const gameKeys=[];
+
+
+function createKey(x,z){
+
+  const group =
+    new THREE.Group();
+
+
+  const ring =
+    new THREE.Mesh(
+      new THREE.TorusGeometry(
+        .2,
+        .055,
+        8,
+        18
+      ),
+      goldMat
+    );
+
+  ring.rotation.x=
+    Math.PI/2;
+
+
+  const stem =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        .08,.4,.08
+      ),
+      goldMat
+    );
+
+  stem.position.y=
+    -.2;
+
+
+  group.add(
+    ring,
+    stem
+  );
+
+
+  group.position.set(
+    x,.75,z
+  );
+
+
+  scene.add(group);
+
+
+  gameKeys.push({
+    object:group,
+    collected:false
+  });
+
+}
+
+
+createKey(-11,-2);
+createKey(11,2);
+createKey(0,6);
+
+
+/* =====================================================
+   MONSTER
+===================================================== */
+
+const monster =
+  new THREE.Group();
+
+
+const monsterBody =
+  new THREE.Mesh(
+    new THREE.CapsuleGeometry(
+      .65,
+      1.6,
+      5,
+      10
+    ),
+    blackMat
+  );
+
+monsterBody.position.y=
+  1.35;
+
+
+const monsterHead =
+  new THREE.Mesh(
+    new THREE.SphereGeometry(
+      .65,
+      16,
+      16
+    ),
+    blackMat
+  );
+
+monsterHead.position.y=
+  2.65;
+
+
+monster.add(
+  monsterBody,
+  monsterHead
+);
+
+
+/* eyes */
+
+function monsterEye(x){
+
+  const eye =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        .09,
+        8,
+        8
+      ),
+      new THREE.MeshBasicMaterial({
+        color:0xff0000
+      })
+    );
+
+  eye.position.set(
+    x,
+    2.72,
+    -.58
+  );
+
+  monster.add(eye);
+
+}
+
+monsterEye(-.2);
+monsterEye(.2);
+
+
+monster.position.set(
+  11,
+  0,
+  -7
+);
+
+scene.add(monster);
+
+
+/* =====================================================
+   GAME VARIABLES
+===================================================== */
+
+let HP=100;
+let STAMINA=100;
+let BATTERY=100;
+
+let collected=0;
+
+let running=false;
+
+let gameStarted=false;
+let gameDead=false;
+let gameWon=false;
+
+let lastTime=
+  performance.now();
+
+
+/* =====================================================
+   PC KEYBOARD
+===================================================== */
+
+const keyboard={};
+
+
+addEventListener(
+  "keydown",
+  event=>{
+
+    keyboard[event.code]=true;
+
+    if(
+      event.code==="KeyF" &&
+      gameStarted
+    ){
+
+      flashlight.visible=
+        !flashlight.visible;
+
+    }
+
+
+    if(
+      event.code==="KeyE" &&
+      gameStarted
+    ){
+
+      interact();
+
+    }
+
+  }
+);
+
+
+addEventListener(
+  "keyup",
+  event=>{
+
+    keyboard[event.code]=false;
+
+  }
+);
+
+
+/* =====================================================
+   START
+===================================================== */
+
+document
+  .getElementById("startButton")
+  .onclick=()=>{
+
+    gameStarted=true;
+
+    document
+      .getElementById("startScreen")
+      .style.display="none";
+
+  };
+
+
+/* =====================================================
+   MOBILE JOYSTICK
+===================================================== */
+
+const joystick =
+  document.getElementById(
+    "joystick"
+  );
+
+const stick =
+  document.getElementById(
+    "stick"
+  );
+
+
+let joyX=0;
+let joyY=0;
+
+let joystickActive=false;
+
+
+joystick.addEventListener(
+  "touchstart",
+  e=>{
+
+    joystickActive=true;
+
+  },
+  {passive:true}
+);
+
+
+joystick.addEventListener(
+  "touchmove",
+  e=>{
+
+    if(!joystickActive)
+      return;
+
+    const touch=e.touches[0];
+
+    const rect=
+      joystick.getBoundingClientRect();
+
+    let x=
+      touch.clientX-
+      (rect.left+rect.width/2);
+
+    let y=
+      touch.clientY-
+      (rect.top+rect.height/2);
+
+    const max=45;
+
+    const length=
+      Math.sqrt(x*x+y*y);
+
+    if(length>max){
+
+      x=
+        x/length*max;
+
+      y=
+        y/length*max;
+
+    }
+
+    joyX=x/max;
+    joyY=y/max;
+
+    stick.style.transform=
+      `translate(${x}px,${y}px)`;
+
+  },
+  {passive:true}
+);
+
+
+function resetJoystick(){
+
+  joystickActive=false;
+
+  joyX=0;
+  joyY=0;
+
+  stick.style.transform=
+    "translate(0,0)";
+
+}
+
+
+joystick.addEventListener(
+  "touchend",
+  resetJoystick
+);
+
+joystick.addEventListener(
+  "touchcancel",
+  resetJoystick
+);
+
+
+/* =====================================================
+   MOBILE LOOK
+===================================================== */
+
+const lookArea =
+  document.getElementById(
+    "lookArea"
+  );
+
+
+let lookActive=false;
+let lastTouchX=0;
+let lastTouchY=0;
+
+
+lookArea.addEventListener(
+  "touchstart",
+  e=>{
+
+    const touch=e.touches[0];
+
+    lookActive=true;
+
+    lastTouchX=
+      touch.clientX;
+
+    lastTouchY=
+      touch.clientY;
+
+  },
+  {passive:true}
+);
+
+
+lookArea.addEventListener(
+  "touchmove",
+  e=>{
+
+    if(!lookActive)
+      return;
+
+    const touch=e.touches[0];
+
+    const dx=
+      touch.clientX-
+      lastTouchX;
+
+    const dy=
+      touch.clientY-
+      lastTouchY;
+
+    lastTouchX=
+      touch.clientX;
+
+    lastTouchY=
+      touch.clientY;
+
+
+    camera.rotation.y -=
+      dx*.004;
+
+    camera.rotation.x -=
+      dy*.004;
+
+
+    camera.rotation.x=
+      THREE.MathUtils.clamp(
+        camera.rotation.x,
+        -1.45,
+        1.45
+      );
+
+  },
+  {passive:true}
+);
+
+
+lookArea.addEventListener(
+  "touchend",
+  ()=>{
+    lookActive=false;
+  }
+);
+
+
+/* =====================================================
+   MOBILE BUTTONS
+===================================================== */
+
+let mobileRun=false;
+
+
+document
+  .getElementById("runBtn")
+  .addEventListener(
+    "touchstart",
+    ()=>{
+      mobileRun=true;
+    },
+    {passive:true}
+  );
+
+
+document
+  .getElementById("runBtn")
+  .addEventListener(
+    "touchend",
+    ()=>{
+      mobileRun=false;
+    },
+    {passive:true}
+  );
+
+
+document
+  .getElementById("flashBtn")
+  .addEventListener(
+    "touchstart",
+    ()=>{
+
+      if(gameStarted)
+        flashlight.visible=
+          !flashlight.visible;
+
+    },
+    {passive:true}
+  );
+
+
+document
+  .getElementById("interactBtn")
+  .addEventListener(
+    "touchstart",
+    ()=>{
+
+      if(gameStarted)
+        interact();
+
+    },
+    {passive:true}
+  );
+
+
+/* =====================================================
+   UI
+===================================================== */
+
+function updateUI(){
+
+  document
+    .getElementById("hp")
+    .style.width=
+      HP+"%";
+
+
+  document
+    .getElementById("stamina")
+    .style.width=
+      STAMINA+"%";
+
+
+  document
+    .getElementById("battery")
+    .style.width=
+      BATTERY+"%";
+
+
+  document
+    .getElementById("objective")
+    .textContent=
+      `Kunci: ${collected}/3`;
+
+}
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+let messageTimer;
+
+
+function message(text){
+
+  const el=
+    document.getElementById(
+      "message"
+    );
+
+  el.textContent=text;
+
+  el.style.opacity="1";
+
+  clearTimeout(
+    messageTimer
+  );
+
+  messageTimer=
+    setTimeout(
+      ()=>{
+        el.style.opacity="0";
+      },
+      2200
+    );
+
+}
+
+
+/* =====================================================
+   INTERACT
+===================================================== */
+
+function interact(){
+
+  if(
+    gameDead ||
+    gameWon
+  )
+    return;
+
+
+  for(
+    const key of gameKeys
+  ){
+
+    if(key.collected)
+      continue;
+
+
+    const distance=
+      camera.position.distanceTo(
+        key.object.position
+      );
+
+
+    if(distance<2){
+
+      key.collected=true;
+
+      scene.remove(
+        key.object
+      );
+
+      collected++;
+
+      updateUI();
+
+      message(
+        "🔑 Kunci ditemukan!"
+      );
+
+      if(collected===3){
+
+        message(
+          "🚪 Semua kunci terkumpul! Cari pintu keluar!"
+        );
+
+      }
+
+    }
+
+  }
+
+
+  if(
+    collected===3 &&
+    camera.position.distanceTo(
+      exit.position
+    )<3
+  ){
+
+    winGame();
+
+  }
+
+}
+
+
+/* =====================================================
+   PLAYER MOVEMENT
+===================================================== */
+
+function movePlayer(delta){
+
+  if(
+    !gameStarted ||
+    gameDead ||
+    gameWon
+  )
+    return;
+
+
+  const forward=
+    keyboard.KeyW ?
+      1 :
+    keyboard.KeyS ?
+     -1 :
+      -joyY;
+
+
+  const strafe=
+    keyboard.KeyD ?
+      1 :
+    keyboard.KeyA ?
+     -1 :
+      joyX;
+
+
+  running=
+    keyboard.ShiftLeft ||
+    keyboard.ShiftRight ||
+    mobileRun;
+
+
+  let speed=3.5;
+
+
+  if(
+    running &&
+    STAMINA>0 &&
+    (forward!==0||strafe!==0)
+  ){
+
+    speed=6;
+
+    STAMINA -=
+      30*delta;
+
+  }else{
+
+    STAMINA +=
+      18*delta;
+
+  }
+
+
+  STAMINA=
+    THREE.MathUtils.clamp(
+      STAMINA,
+      0,
+      100
+    );
+
+
+  if(forward!==0){
+
+    camera.translateZ(
+      -forward*
+      speed*
+      delta
+    );
+
+  }
+
+
+  if(strafe!==0){
+
+    camera.translateX(
+      strafe*
+      speed*
+      delta
+    );
+
+  }
+
+
+  camera.position.x=
+    THREE.MathUtils.clamp(
+      camera.position.x,
+      -13.5,
+      13.5
+    );
+
+
+  camera.position.z=
+    THREE.MathUtils.clamp(
+      camera.position.z,
+      -13.5,
+      13.5
+    );
+
+
+  camera.position.y=1.7;
+
+
+  /* flashlight */
+
+  if(flashlight.visible){
+
+    BATTERY -=
+      1.7*delta;
+
+    if(BATTERY<=0){
+
+      BATTERY=0;
+
+      flashlight.visible=false;
+
+      message(
+        "🔋 Baterai senter habis."
+      );
+
+    }
+
+  }
+
+
+  updateUI();
+
+}
+
+
+/* =====================================================
+   MONSTER AI
+===================================================== */
+
+function monsterAI(delta){
+
+  if(
+    !gameStarted ||
+    gameDead ||
+    gameWon
+  )
+    return;
+
+
+  const distance=
+    monster.position.distanceTo(
+      camera.position
+    );
+
+
+  let speed=0;
+
+
+  if(distance<20)
+    speed=1.25;
+
+
+  if(distance<12)
+    speed=2;
+
+
+  if(distance<7)
+    speed=3;
+
+
+  if(speed){
+
+    const direction=
+      new THREE.Vector3()
+      .subVectors(
+        camera.position,
+        monster.position
+      );
+
+
+    direction.y=0;
+
+    direction.normalize();
+
+
+    monster.position.addScaledVector(
+      direction,
+      speed*delta
+    );
+
+
+    monster.lookAt(
+      camera.position.x,
+      monster.position.y,
+      camera.position.z
+    );
+
+  }
+
+
+  /* danger */
+
+  if(distance<8){
+
+    const intensity=
+      1-distance/8;
+
+
+    document
+      .getElementById("vignette")
+      .style.boxShadow=
+      `inset 0 0 ${
+        100+intensity*100
+      }px rgba(100,0,0,.8)`;
+
+  }
+
+
+  if(distance<1.4){
+
+    damage(100);
+
+  }
+
+}
+
+
+/* =====================================================
+   DAMAGE
+===================================================== */
+
+function damage(amount){
+
+  if(gameDead)
+    return;
+
+
+  HP-=amount;
+
+
+  document
+    .getElementById("blood")
+    .style.opacity=".9";
+
+
+  setTimeout(
+    ()=>{
+      document
+        .getElementById("blood")
+        .style.opacity="0";
+    },
+    250
+  );
+
+
+  updateUI();
+
+
+  if(HP<=0)
+    die();
+
+}
+
+
+/* =====================================================
+   DEATH
+===================================================== */
+
+function die(){
+
+  if(gameDead)
+    return;
+
+
+  gameDead=true;
+
+
+  document
+    .getElementById("scare")
+    .style.display="flex";
+
+
+  setTimeout(
+    ()=>{
+      location.reload();
+    },
+    3500
+  );
+
+}
+
+
+/* =====================================================
+   WIN
+===================================================== */
+
+function winGame(){
+
+  if(gameWon)
+    return;
+
+
+  gameWon=true;
+
+
+  document
+    .getElementById("winScreen")
+    .style.display="flex";
+
+}
+
+
+/* =====================================================
+   ANIMATION
+===================================================== */
+
+function animate(time){
+
+  requestAnimationFrame(
+    animate
+  );
+
+
+  const delta=
+    Math.min(
+      (time-lastTime)/1000,
+      .05
+    );
+
+
+  lastTime=time;
+
+
+  movePlayer(delta);
+
+  monsterAI(delta);
+
+
+  /* floating keys */
+
+  for(
+    const key of gameKeys
+  ){
+
+    if(!key.collected){
+
+      key.object.rotation.y +=
+        delta*2;
+
+      key.object.position.y=
+        .75+
+        Math.sin(
+          time*.004
+        )*.12;
+
+    }
+
+  }
+
+
+  renderer.render(
+    scene,
+    camera
+  );
+
+}
+
+
+animate(
+  performance.now()
+);
+
+
+/* =====================================================
+   RESIZE
+===================================================== */
+
+addEventListener(
+  "resize",
+  ()=>{
+    
+    camera.aspect=
+      innerWidth/
+      innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      innerWidth,
+      innerHeight
+    );
+
+  }
+);
+
+
+updateUI();
+
+</script>
+
+</body>
+</html>
